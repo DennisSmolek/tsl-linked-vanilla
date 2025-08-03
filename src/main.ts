@@ -55,7 +55,7 @@ class Box {
   }
 
   mesh: THREE.Mesh;
-  material = new THREE.MeshStandardNodeMaterial();
+  material = new THREE.MeshStandardMaterial();
 
   setHovered(hovered: boolean) {
     this.uniforms.hovered.value = hovered;
