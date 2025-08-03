@@ -11,7 +11,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   10
 )
-camera.position.z = 1
+camera.position.set(0, 1, 2)
 
 const renderer = new THREE.WebGPURenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
@@ -55,7 +55,7 @@ class Box {
   }
 
   mesh: THREE.Mesh;
-  material = new THREE.NodeMaterial();
+  material = new THREE.MeshStandardNodeMaterial();
 
   setHovered(hovered: boolean) {
     this.uniforms.hovered.value = hovered;
@@ -65,9 +65,18 @@ class Box {
   constructor(scene: THREE.Scene) {
     this.material.colorNode = select(this.uniforms.hovered, this.uniforms.colorA, this.uniforms.colorB);
     this.mesh = new THREE.Mesh(new THREE.BoxGeometry(), this.material);
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
     scene.add(this.mesh);
   }
 }
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.position.set(1, 3, 1);
+scene.add(directionalLight);
 
 const leftBox = new Box(scene);
 const rightBox = new Box(scene);
