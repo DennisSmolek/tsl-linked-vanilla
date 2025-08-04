@@ -1,6 +1,6 @@
 import './style.css'
 import * as THREE from 'three/webgpu'
-import { color, positionLocal, select, uniform } from 'three/tsl'
+import { color, select, uniform } from 'three/tsl'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
 //* Basic Scene Setup ================================
@@ -28,48 +28,29 @@ const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 
 
-//* Planes ================================
-// Materials ---
-const asColorMaterial = new THREE.NodeMaterial();
-asColorMaterial.colorNode = positionLocal;
-const asFragMaterial = new THREE.NodeMaterial();
-asFragMaterial.fragmentNode = positionLocal;
-
-
-const colorPlane = new THREE.Mesh(new THREE.PlaneGeometry(), asColorMaterial)
-const fragPlane = new THREE.Mesh(new THREE.PlaneGeometry(), asFragMaterial)
-colorPlane.position.y = 0.5
-fragPlane.position.y = -0.5
-scene.add(colorPlane)
-scene.add(fragPlane)
-
-
 //* Boxes ================================
-
-class Box {
-
-  uniforms = {
-    colorA: uniform(color('orange')),
-    colorB: uniform(color('blue')),
-    hovered: uniform(false),
-  }
-
-  mesh: THREE.Mesh;
-  material = new THREE.MeshStandardMaterial();
-
-  setHovered(hovered: boolean) {
-    this.uniforms.hovered.value = hovered;
-    console.log(`mesh ${this.mesh.uuid} hovered: ${this.uniforms.hovered.value}`)
-  }
-
-  constructor(scene: THREE.Scene) {
-    this.material.colorNode = select(this.uniforms.hovered, this.uniforms.colorA, this.uniforms.colorB);
-    this.mesh = new THREE.Mesh(new THREE.BoxGeometry(), this.material);
-    this.mesh.castShadow = true;
-    this.mesh.receiveShadow = true;
-    scene.add(this.mesh);
-  }
+// box A
+const boxAUniforms = {
+  colorA: uniform(color('orange')),
+  colorB: uniform(color('blue')),
+  hovered: uniform(false),
 }
+const boxAMaterial = new THREE.NodeMaterial();
+boxAMaterial.colorNode = select(boxAUniforms.hovered, boxAUniforms.colorA, boxAUniforms.colorB);
+const boxAMesh = new THREE.Mesh( new THREE.BoxGeometry(), boxAMaterial);
+scene.add(boxAMesh);
+
+// box B
+
+const boxBUniforms = {
+  colorA: uniform(color('orange')),
+  colorB: uniform(color('blue')),
+  hovered: uniform(false),
+}
+const boxBMaterial = new THREE.NodeMaterial();
+boxBMaterial.colorNode = select(boxBUniforms.hovered, boxBUniforms.colorA, boxBUniforms.colorB);
+const boxBMesh = new THREE.Mesh( new THREE.BoxGeometry(), boxBMaterial);
+scene.add(boxBMesh);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
@@ -78,18 +59,14 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 directionalLight.position.set(1, 3, 1);
 scene.add(directionalLight);
 
-const leftBox = new Box(scene);
-const rightBox = new Box(scene);
-
 // Position the boxes so they're visible and separated
-leftBox.mesh.position.x = -1;
-rightBox.mesh.position.x = 1;
+boxAMesh.position.x = -1;
+boxBMesh.position.x = 1;
 
 //* Raycaster Setup ================================
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-const boxMeshes = [leftBox.mesh, rightBox.mesh]; // Array of box meshes for raycasting
-let currentlyHovered: Box | null = null; // Track which box is currently hovered
+const boxMeshes = [boxAMesh, boxBMesh]; 
 
 // Mouse move event listener
 function onMouseMove(event: MouseEvent) {
@@ -106,35 +83,27 @@ function onMouseMove(event: MouseEvent) {
   if (intersects.length > 0) {
     // Found intersection with a box
     const intersectedMesh = intersects[0].object as THREE.Mesh;
-    const hoveredBox = intersectedMesh === leftBox.mesh ? leftBox : rightBox;
 
     // Only update if we're hovering a different box
-    if (currentlyHovered !== hoveredBox) {
-      // Clear previous hover state
-      if (currentlyHovered) {
-        currentlyHovered.setHovered(false);
-      }
+    if (intersectedMesh === boxAMesh) {
+        boxAUniforms.hovered.value = true;
+        boxBUniforms.hovered.value = false;
+    }
 
-      // Set new hover state
-      hoveredBox.setHovered(true);
-      currentlyHovered = hoveredBox;
+    if (intersectedMesh === boxBMesh) {
+      boxBUniforms.hovered.value = true;
+      boxAUniforms.hovered.value = false;
     }
   } else {
-    // No intersection, clear any hover state
-    if (currentlyHovered) {
-      currentlyHovered.setHovered(false);
-      currentlyHovered = null;
-    }
+    boxAUniforms.hovered.value = false;
+    boxBUniforms.hovered.value = false;
   }
 }
 
 // Add the mouse move event listener
 window.addEventListener('mousemove', onMouseMove);
 
-renderer.debug.getShaderAsync(scene, camera, colorPlane).then((e) => {
-  //console.log(e.vertexShader)
-  console.log(e.fragmentShader)
-})
+
 
 function animate() {
   controls.update()
