@@ -27,30 +27,39 @@ window.addEventListener('resize', function () {
 const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 
+class MyBox {
+  uniforms= {
+  colorA:uniform(color("red")),
+  colorB:uniform(color("pink")),
+  hovered:uniform(false)
+  }
+  setHovered(value: boolean) {
+    this.uniforms.hovered.value = value;
+  }
+
+  name = "box";
+  material = new THREE.NodeMaterial();
+  mesh: THREE.Mesh;
+
+  constructor(scene: THREE.Scene) {
+    this.material.fragmentNode = select(this.uniforms.hovered, this.uniforms.colorA, this.uniforms.colorB);
+    this.mesh = new THREE.Mesh(new THREE.BoxGeometry(), this.material);
+    scene.add(this.mesh);
+
+  }
+}
+
+
 
 //* Boxes ================================
 // box A
-const boxAUniforms = {
-  colorA: uniform(color('orange')),
-  colorB: uniform(color('blue')),
-  hovered: uniform(false),
-}
-const boxAMaterial = new THREE.NodeMaterial();
-boxAMaterial.colorNode = select(boxAUniforms.hovered, boxAUniforms.colorA, boxAUniforms.colorB);
-const boxAMesh = new THREE.Mesh( new THREE.BoxGeometry(), boxAMaterial);
-scene.add(boxAMesh);
+const boxA = new MyBox(scene);
+boxA.mesh.position.x = -1;
 
 // box B
 
-const boxBUniforms = {
-  colorA: uniform(color('orange')),
-  colorB: uniform(color('blue')),
-  hovered: uniform(false),
-}
-const boxBMaterial = new THREE.NodeMaterial();
-boxBMaterial.colorNode = select(boxBUniforms.hovered, boxBUniforms.colorA, boxBUniforms.colorB);
-const boxBMesh = new THREE.Mesh( new THREE.BoxGeometry(), boxBMaterial);
-scene.add(boxBMesh);
+const boxB = new MyBox(scene);
+boxB.mesh.position.x = 1;
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
@@ -59,14 +68,11 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 directionalLight.position.set(1, 3, 1);
 scene.add(directionalLight);
 
-// Position the boxes so they're visible and separated
-boxAMesh.position.x = -1;
-boxBMesh.position.x = 1;
 
 //* Raycaster Setup ================================
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-const boxMeshes = [boxAMesh, boxBMesh]; 
+const boxMeshes = [boxA.mesh, boxB.mesh]; 
 
 // Mouse move event listener
 function onMouseMove(event: MouseEvent) {
@@ -85,18 +91,18 @@ function onMouseMove(event: MouseEvent) {
     const intersectedMesh = intersects[0].object as THREE.Mesh;
 
     // Only update if we're hovering a different box
-    if (intersectedMesh === boxAMesh) {
-        boxAUniforms.hovered.value = true;
-        boxBUniforms.hovered.value = false;
+    if (intersectedMesh === boxA.mesh) {
+        boxA.setHovered(true);
+        boxB.setHovered(false);
     }
 
-    if (intersectedMesh === boxBMesh) {
-      boxBUniforms.hovered.value = true;
-      boxAUniforms.hovered.value = false;
+    if (intersectedMesh === boxB.mesh) {
+      boxB.setHovered(true);
+      boxA.setHovered(false);
     }
   } else {
-    boxAUniforms.hovered.value = false;
-    boxBUniforms.hovered.value = false;
+    boxA.setHovered(false);
+    boxB.setHovered(false);
   }
 }
 
